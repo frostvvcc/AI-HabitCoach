@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "打卡助手",
+    "slug": "checkin-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.checkin.app",
+      "runtimeVersion": "1.0.0"
+    },
+    "android": {
+      "package": "com.checkin.app",
+      "versionCode": 1,
+      "permissions": [],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d96fcfc2-a97e-492a-9c8a-b069ad03335d"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d96fcfc2-a97e-492a-9c8a-b069ad03335d"
+    }
+  }
+}
