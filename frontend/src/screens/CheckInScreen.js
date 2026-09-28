@@ -764,7 +764,7 @@ const GroupHeaderItem = ({ group, isExpanded, onToggle, count }) => {
 // ==========================================
 export default function CheckInScreen() {
   const navigation = useNavigation();
-  const { goals, stats, checkIns, refreshData } = useCheckIn(); 
+  const { goals, stats, checkIns, groups: contextGroups, refreshData } = useCheckIn();
   const [groups, setGroups] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState({}); 
   const [manageModalVisible, setManageModalVisible] = useState(false);
@@ -843,6 +843,14 @@ export default function CheckInScreen() {
       }
     } catch (e) { console.log(e); }
   };
+
+  useEffect(() => {
+    if (contextGroups && contextGroups.length > 0) {
+      const defaultGroup = { id: 'default', name: '默认分组', isVirtual: true };
+      const allGroups = [defaultGroup, ...contextGroups];
+      setGroups(allGroups);
+    }
+  }, [contextGroups]);
 
   useFocusEffect(useCallback(() => {
     refreshData();

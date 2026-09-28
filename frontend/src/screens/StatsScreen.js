@@ -10,7 +10,8 @@ import {
   Alert,
   ScrollView,
   UIManager,
-  Vibration
+  Vibration,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format, startOfWeek, endOfWeek, startOfMonth, getDaysInMonth, eachDayOfInterval, isSameDay, getDay } from 'date-fns';
 import { useCheckIn } from '../context/CheckInContext';
 import { DragSortableView } from 'react-native-drag-sort';
+import { getDailyReport, getWeeklyReport } from '../services/aiService';
 
 // 获取屏幕宽高
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -234,6 +236,26 @@ export default function StatsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportContent, setReportContent] = useState('');
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const fetchReport = async (type) => {
+    setReportTitle(type === 'daily' ? '今日报告' : '本周周报');
+    setReportContent('');
+    setReportVisible(true);
+    setReportLoading(true);
+    try {
+      const data = type === 'daily' ? await getDailyReport() : await getWeeklyReport();
+      setReportContent(data.report || '暂无数据');
+    } catch (e) {
+      setReportContent('报告生成失败，请稍后再试。');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   // 拖拽相关状态
   const [isDragging, setIsDragging] = useState(false);
   // 【已删除】isOverTrash 状态
@@ -311,8 +333,17 @@ export default function StatsScreen() {
     <View style={styles.container}>
       
       <View style={styles.navBar}>
-
-        <TouchableOpacity 
+        <View style={styles.reportBtns}>
+          <TouchableOpacity style={styles.reportBtn} onPress={() => fetchReport('daily')}>
+            <Ionicons name="today-outline" size={16} color="#007AFF" />
+            <Text style={styles.reportBtnText}>今日报告</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.reportBtn} onPress={() => fetchReport('weekly')}>
+            <Ionicons name="calendar-outline" size={16} color="#007AFF" />
+            <Text style={styles.reportBtnText}>周报</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
           style={styles.navBtn}
           onPress={() => setModalVisible(true)}
         >
@@ -368,8 +399,31 @@ export default function StatsScreen() {
 
       {/* 【已删除】整个垃圾桶 View 被移除了 */}
 
-      <GoalSelectorModal 
-        visible={modalVisible} 
+      {/* AI 报告弹窗 */}
+      <Modal visible={reportVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setReportVisible(false)}>
+        <View style={styles.reportModal}>
+          <View style={styles.reportHeader}>
+            <TouchableOpacity onPress={() => setReportVisible(false)}>
+              <Ionicons name="close" size={24} color="#8E8E93" />
+            </TouchableOpacity>
+            <Text style={styles.reportModalTitle}>{reportTitle}</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <ScrollView style={styles.reportBody} contentContainerStyle={{ paddingBottom: 40 }}>
+            {reportLoading ? (
+              <View style={{ alignItems: 'center', paddingTop: 60 }}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={{ color: '#999', marginTop: 12 }}>AI 正在分析你的数据...</Text>
+              </View>
+            ) : (
+              <Text style={styles.reportText}>{reportContent}</Text>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <GoalSelectorModal
+        visible={modalVisible}
         onClose={() => setModalVisible(false)}
         allGoals={goals}
         selectedIds={selectedGoalIds}
@@ -469,4 +523,23 @@ const styles = StyleSheet.create({
   selectLabel: { fontSize: 16, color: '#333' },
   checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#E5E5EA', justifyContent: 'center', alignItems: 'center' },
   checkboxSelected: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+
+  // Report buttons
+  reportBtns: { flexDirection: 'row', gap: 8 },
+  reportBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14,
+  },
+  reportBtnText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
+
+  // Report modal
+  reportModal: { flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'ios' ? 56 : 40 },
+  reportHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E5EA',
+  },
+  reportModalTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
+  reportBody: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
+  reportText: { fontSize: 16, lineHeight: 26, color: '#333' },
 });

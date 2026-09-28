@@ -10,6 +10,12 @@ const getAuthHeaders = async () => {
   };
 };
 
+const requireToken = async () => {
+  const token = await getStoredToken();
+  if (!token) throw new Error('未登录');
+  return token;
+};
+
 // ========================
 // 分组 (Groups) API
 // ========================
@@ -73,6 +79,7 @@ export const deleteGroup = async (id) => {
 
 export const getGoals = async () => {
   try {
+    await requireToken();
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/api/goals`, { headers });
     if (!response.ok) throw new Error('获取目标失败');
@@ -129,6 +136,7 @@ export const reorderGoals = async (sortedGoals) => {
 // ========================
 
 export const getCheckIns = async () => {
+  await requireToken();
   const headers = await getAuthHeaders();
   const response = await fetch(`${API_BASE_URL}/api/checkins`, { headers });
   if (!response.ok) throw new Error('获取记录失败');
@@ -185,6 +193,7 @@ export const checkInGoal = async (goalId, note, image, goalList, customDate = nu
 };
 
 export const getStats = async () => {
+  await requireToken();
   const headers = await getAuthHeaders();
   const response = await fetch(`${API_BASE_URL}/api/stats`, { headers });
   const data = await response.json();

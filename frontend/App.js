@@ -1,4 +1,7 @@
+// ⚠️ 必须是整个 App 的第一行 import —— gesture-handler 在旧架构下要求最先加载
+import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -14,9 +17,11 @@ import StatsScreen from './src/screens/StatsScreen';
 import MyScreen from './src/screens/MyScreen';
 import CreateGoalScreen from './src/screens/CreateGoalScreen';
 import RecordCheckInScreen from './src/screens/RecordCheckInScreen';
+import DayDetailScreen from './src/screens/DayDetailScreen';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CheckInProvider } from './src/context/CheckInContext';
+import FloatingAI from './src/components/FloatingAI';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,21 +35,19 @@ function MainTabs() {
           let iconName;
 
           if (route.name === '待办') {
-            // 使用列表图标，强调“今日清单”
-            iconName = focused ? 'list' : 'list-outline';
+            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === '任务') {
-            // 使用层叠图标，强调“任务管理/库”
-            iconName = focused ? 'layers' : 'layers-outline';
+            iconName = focused ? 'list' : 'list-outline';
           } else if (route.name === '统计') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === '我的') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = focused ? 'person-circle' : 'person-circle-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#4A90E2',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: '#8E8E93',
         headerShown: false,
       })}
     >
@@ -81,14 +84,19 @@ function AppNavigator() {
                 headerBackTitle: '返回'
               }}
             />
-            <Stack.Screen 
-              name="RecordCheckIn" 
+            <Stack.Screen
+              name="RecordCheckIn"
               component={RecordCheckInScreen}
-              options={{ 
-                headerShown: true, 
+              options={{
+                headerShown: true,
                 title: '记录打卡',
                 headerBackTitle: '返回'
               }}
+            />
+            <Stack.Screen
+              name="DayDetail"
+              component={DayDetailScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}
@@ -97,13 +105,24 @@ function AppNavigator() {
   );
 }
 
+function FloatingAIWrapper() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <FloatingAI />;
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <CheckInProvider>
-        <StatusBar style="auto" />
-        <AppNavigator />
-      </CheckInProvider>
-    </AuthProvider>
+    // GestureHandlerRootView 包住整个 App —— 这样根部的 FloatingAI 悬浮球
+    // 以及任何子页面都能使用 react-native-gesture-handler 的手势
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <CheckInProvider>
+          <StatusBar style="auto" />
+          <AppNavigator />
+          <FloatingAIWrapper />
+        </CheckInProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

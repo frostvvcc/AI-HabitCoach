@@ -107,6 +107,24 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: '登录失败' }); }
 });
 
+// 验证码登录
+app.post('/api/auth/login-with-code', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    const stored = verificationCodes.get(phone);
+    if (!stored || stored.code !== code || Date.now() > stored.expiresAt) {
+      return res.status(401).json({ error: '验证码无效或已过期' });
+    }
+    verificationCodes.delete(phone);
+
+    let user = await User.findOne({ phone });
+    if (!user) return res.status(401).json({ error: '用户不存在，请先注册' });
+
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ user, token });
+  } catch (e) { res.status(500).json({ error: '登录失败' }); }
+});
+
 // 更新用户信息
 app.put('/api/auth/user', authenticateToken, async (req, res) => {
   try {
@@ -144,7 +162,12 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
 app.get('/api/groups', authenticateToken, async (req, res) => {
   try {
     const groups = await GoalGroup.find({ user: req.user.id }).sort({ sort_order: 1, created_at: 1 });
-    res.json({ groups });
+    const formatted = groups.map(g => {
+      const obj = g.toObject();
+      obj.id = obj._id;
+      return obj;
+    });
+    res.json({ groups: formatted });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -459,6 +482,10 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
     res.status(500).json({ error: '统计失败' }); 
   }
 });
+
+// ============ 6. AI Agent API ============
+const aiRoutes = require('./routes/aiRoutes');
+app.use('/api/ai', authenticateToken, aiRoutes);
 
 // ============ 启动服务器 ============
 
